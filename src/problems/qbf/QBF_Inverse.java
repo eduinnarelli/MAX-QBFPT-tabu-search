@@ -4,7 +4,7 @@ import java.io.IOException;
 
 /**
  * Class representing the inverse of the Quadractic Binary Function
- * ({@link QBF}), which is used since the GRASP is set by
+ * ({@link QBF}), which is used since the Tabu Search is set by
  * default as a minimization procedure.
  * 
  * @author ccavellucci, fusberti
