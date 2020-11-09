@@ -5,8 +5,8 @@ Atividade 5 de MO824 - Tópicos em Otimização Combinatória.
 
 **Grupo:**
   - Eduardo Barros Innarelli (170161)
-  - Jorge Menezes dos Santos (265190)
   - Victor Ferreira Ferrari (187890)
+  - Jorge Menezes dos Santos (265190)
 
 Disciplina oferecida no 2º semestre de 2020 pelo professor [Fábio Luiz Usberti](https://www.ic.unicamp.br/~fusberti/).
 
