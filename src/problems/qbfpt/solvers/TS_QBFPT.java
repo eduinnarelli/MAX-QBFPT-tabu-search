@@ -61,7 +61,7 @@ public class TS_QBFPT extends TS_QBF {
 
         // Store numbers in solution and _CL as hash sets.
         Set<Integer> sol = new HashSet<Integer>(currentSol);
-        Set<Integer> _CL = new HashSet<Integer>(CL);
+        Set<Integer> _CL = new HashSet<Integer>();
 
         // Initialize _CL with all elements not in solution.
         for (Integer e = 0; e < ObjFunction.getDomainSize(); e++) {
