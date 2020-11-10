@@ -143,7 +143,7 @@ public class TS_QBFPT extends TS_QBF {
 		Integer bestCandIn = null, bestCandOut = null;
 		boolean done = false;
 
-		minDeltaCost = 0.0;
+		minDeltaCost = Double.POSITIVE_INFINITY;
 		updateCL();
 		
 		// Evaluate insertions
@@ -219,7 +219,7 @@ public class TS_QBFPT extends TS_QBF {
         long startTime = System.currentTimeMillis();
         TS_QBF ts = new TS_QBFPT(20, 
         						 10000, 
-        						 "instances/qbf020",
+        						 "instances/qbf200",
         						 SearchStrategy.BI);
         Solution<Integer> bestSol = ts.solve();
         System.out.println("maxVal = " + bestSol);
