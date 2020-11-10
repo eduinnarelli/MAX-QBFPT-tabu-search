@@ -20,7 +20,7 @@ import solutions.Solution;
  */
 public class TS_QBF extends AbstractTS<Integer> {
 	
-	private final Integer fake = new Integer(-1);
+	private final Integer fake = -1;
 
 	/**
 	 * Constructor for the TS_QBF class. An inverse QBF objective function is
@@ -48,7 +48,7 @@ public class TS_QBF extends AbstractTS<Integer> {
 
 		ArrayList<Integer> _CL = new ArrayList<Integer>();
 		for (int i = 0; i < ObjFunction.getDomainSize(); i++) {
-			Integer cand = new Integer(i);
+			Integer cand = i;
 			_CL.add(cand);
 		}
 

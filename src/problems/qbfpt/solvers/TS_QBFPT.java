@@ -17,11 +17,23 @@ import solutions.Solution;
  * @author einnarelli, jmenezes, vferrari
  */
 public class TS_QBFPT extends TS_QBF {
-
+	private enum SearchStrategy {
+		FI,
+		BI
+	}
+	
+	private final Integer fake = -1;
+	
     /**
      * The set T of prohibited triples.
      */
     private final Set<List<Integer>> T;
+    
+    /**
+	 * Value to represent local search type.
+	 * Can be first-improving (FI) or best-improving (BI). 
+	 */
+	private final SearchStrategy searchType;
 
     /**
      * Constructor for the TS_QBFPT class.
@@ -33,13 +45,17 @@ public class TS_QBFPT extends TS_QBF {
      * @param filename
      *            Name of the file for which the objective function parameters
      *            should be read.
+     * @param type
+     * 			  Local search strategy type, being either first improving or
+     * 			  best improving.
      * @throws IOException
      *            Necessary for I/O operations.
      */
     public TS_QBFPT(
         Integer tenure, 
         Integer iterations, 
-        String filename
+        String filename,
+        SearchStrategy type
     ) throws IOException {
 
         super(tenure, iterations, filename);
@@ -48,6 +64,7 @@ public class TS_QBFPT extends TS_QBF {
         QBFPT qbfpt = new QBFPT(filename);
         T = qbfpt.getT();
         ObjFunction = qbfpt;
+        searchType = type;
 
     }
 
@@ -101,7 +118,98 @@ public class TS_QBFPT extends TS_QBF {
         CL = new ArrayList<Integer>(_CL);
 
     }
+    
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Solution<Integer> neighborhoodMove() {
+		Solution<Integer> sol;
+		
+		// Check local search method.
+		if (this.searchType == SearchStrategy.BI)
+			sol = super.neighborhoodMove();
+		else
+			sol = firstImprovingNM();
+	
+		return sol;
+	}
+	
+	/*
+	 * First improving neighborhood move.
+	 */
+	private Solution<Integer> firstImprovingNM(){
+		Double minDeltaCost;
+		Integer bestCandIn = null, bestCandOut = null;
+		boolean done = false;
 
+		minDeltaCost = 0.0;
+		updateCL();
+		
+		// Evaluate insertions
+		for (Integer candIn : CL) {
+			Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, currentSol);
+			if (!TL.contains(candIn) || currentSol.cost+deltaCost < incumbentSol.cost) {
+				if (deltaCost < minDeltaCost) {
+					minDeltaCost = deltaCost;
+					bestCandIn = candIn;
+					bestCandOut = null;
+					break;
+				}
+			}
+		}
+		
+		// Evaluate removals
+		for (Integer candOut : currentSol) {
+			Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, currentSol);
+			if (!TL.contains(candOut) || currentSol.cost+deltaCost < incumbentSol.cost) {
+				if (deltaCost < minDeltaCost) {
+					minDeltaCost = deltaCost;
+					bestCandIn = null;
+					bestCandOut = candOut;
+					break;
+				}
+			}
+		}
+		
+		// Evaluate exchanges
+		for (Integer candIn : CL) {
+			for (Integer candOut : currentSol) {
+				Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, currentSol);
+				if ((!TL.contains(candIn) && !TL.contains(candOut)) || currentSol.cost+deltaCost < incumbentSol.cost) {
+					if (deltaCost < minDeltaCost) {
+						minDeltaCost = deltaCost;
+						bestCandIn = candIn;
+						bestCandOut = candOut;
+						done = true;
+						break;
+					}
+				}
+			}
+			if(done) break;
+		}
+		
+		// Implement the best of the first non-tabu moves.
+		TL.poll();
+		if (bestCandOut != null) {
+			currentSol.remove(bestCandOut);
+			CL.add(bestCandOut);
+			TL.add(bestCandOut);
+		} else {
+			TL.add(fake);
+		}
+		TL.poll();
+		if (bestCandIn != null) {
+			currentSol.add(bestCandIn);
+			CL.remove(bestCandIn);
+			TL.add(bestCandIn);
+		} else {
+			TL.add(fake);
+		}
+		ObjFunction.evaluate(currentSol);
+		
+		return null;
+	}
 
     /**
      * A main method used for testing the Tabu Search metaheuristic.
@@ -109,7 +217,10 @@ public class TS_QBFPT extends TS_QBF {
     public static void main(String[] args) throws IOException {
 
         long startTime = System.currentTimeMillis();
-        TS_QBF ts = new TS_QBFPT(20, 10000, "instances/qbf020");
+        TS_QBF ts = new TS_QBFPT(20, 
+        						 10000, 
+        						 "instances/qbf020",
+        						 SearchStrategy.BI);
         Solution<Integer> bestSol = ts.solve();
         System.out.println("maxVal = " + bestSol);
         long endTime   = System.currentTimeMillis();
