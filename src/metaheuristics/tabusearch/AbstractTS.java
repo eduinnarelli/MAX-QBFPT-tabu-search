@@ -219,7 +219,7 @@ public abstract class AbstractTS<E> {
 		TL = makeTL();
 		for (int i = 0; i < iterations; i++) {
 			neighborhoodMove();
-			if (incumbentSol.cost > currentSol.cost) {
+			if (incumbentSol.cost > currentSol.cost && isSolutionFeasible(currentSol)) {
 				incumbentSol = new Solution<E>(currentSol);
 				if (verbose)
 					System.out.println("(Iter. " + i + ") BestSol = " + incumbentSol);
@@ -238,6 +238,15 @@ public abstract class AbstractTS<E> {
 	 */
 	public Boolean constructiveStopCriteria() {
 		return (currentCost > currentSol.cost) ? false : true;
+	}
+	
+	/**
+	 * Check if solution is feasible.
+	 * @param sol Current solution to check.
+	 * @return true if feasible, false otherwise.
+	 */
+	public boolean isSolutionFeasible(Solution<E> sol) {
+		return true;
 	}
 
 }

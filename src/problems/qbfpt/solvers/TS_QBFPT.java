@@ -34,6 +34,11 @@ public class TS_QBFPT extends TS_QBF {
 	 * Can be first-improving (FI) or best-improving (BI). 
 	 */
 	private final SearchStrategy searchType;
+	
+	/**
+	 * 
+	 */
+	private final boolean oscillation;
 
     /**
      * Constructor for the TS_QBFPT class.
@@ -55,17 +60,18 @@ public class TS_QBFPT extends TS_QBF {
         Integer tenure, 
         Integer iterations, 
         String filename,
-        SearchStrategy type
+        SearchStrategy type,
+        boolean oscillation
     ) throws IOException {
 
         super(tenure, iterations, filename);
 
         // Instantiate QBFPT problem, store T and update objective reference.
-        QBFPT qbfpt = new QBFPT(filename);
+        QBFPT qbfpt = new QBFPT(filename, oscillation);
         T = qbfpt.getT();
         ObjFunction = qbfpt;
         searchType = type;
-
+        this.oscillation = oscillation;
     }
 
     /*
@@ -86,7 +92,13 @@ public class TS_QBFPT extends TS_QBF {
                 _CL.add(e);
             }
         }
-
+        
+        // If strategic oscillation is active, no need to remove infeasible elements.
+        if(oscillation) {
+        	CL = new ArrayList<Integer>(_CL);
+        	return;
+        }
+        
         for (List<Integer> t : T) {
 
             /**
@@ -121,6 +133,8 @@ public class TS_QBFPT extends TS_QBF {
     
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * Can be first-improving or best-improving.
 	 */
 	@Override
 	public Solution<Integer> neighborhoodMove() {
@@ -210,6 +224,40 @@ public class TS_QBFPT extends TS_QBF {
 		
 		return null;
 	}
+	
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * Check if any triple restriction is violated.
+	 */
+	@Override
+    public boolean isSolutionFeasible(Solution<Integer> sol) {
+    	boolean feasible = true;
+        Integer e1, e2, e3;
+        
+        // Check strategic oscillation.
+        if(!oscillation) return true;
+        
+    	for (List<Integer> t : T) {
+
+            /**
+             * Detach elements from (e1, e2, e3). They are stored as numbers 
+             * from [0, n-1] in sol., different than in T ([1, n]).
+             */
+            e1 = t.get(0) - 1;
+            e2 = t.get(1) - 1;
+            e3 = t.get(2) - 1;
+
+            // e1, e2 and e3 in solution -> infeasible.
+            if (sol.contains(e1) && sol.contains(e2) && sol.contains(e3)) {
+            	feasible = false;
+            	break;
+            }
+        }
+    	
+    	return feasible;
+    }
+
 
     /**
      * A main method used for testing the Tabu Search metaheuristic.
@@ -220,7 +268,8 @@ public class TS_QBFPT extends TS_QBF {
         TS_QBF ts = new TS_QBFPT(20, 
         						 10000, 
         						 "instances/qbf200",
-        						 SearchStrategy.BI);
+        						 SearchStrategy.BI,
+        						 false);
         Solution<Integer> bestSol = ts.solve();
         System.out.println("maxVal = " + bestSol);
         long endTime   = System.currentTimeMillis();

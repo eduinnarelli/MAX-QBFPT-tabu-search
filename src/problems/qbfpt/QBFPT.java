@@ -21,6 +21,12 @@ public class QBFPT extends QBF_Inverse {
      * The set T of prohibited triples.
      */
     private final Set<List<Integer>> T;
+    
+    /**
+     * Variable that indicate if strategic oscillation is active.
+     */
+    private final boolean oscillation;
+    private final double PENALTY = 100;
 
     /**
      * Constructor for the QBFPT class.
@@ -32,9 +38,10 @@ public class QBFPT extends QBF_Inverse {
      * @throws IOException
      *      Necessary for I/O operations.
      */
-    public QBFPT(String filename) throws IOException {
+    public QBFPT(String filename, boolean oscillation) throws IOException {
         super(filename);
         T = generateTriples();
+        this.oscillation = oscillation;
     }
 
     /**
@@ -145,4 +152,57 @@ public class QBFPT extends QBF_Inverse {
 
     }
     
+    /**
+     * {@inheritDoc}
+     * 
+     * Adds penalty if solution if infeasible.
+     */
+    @Override
+	protected Double evaluateContributionQBF(int i) {
+
+		Double sum = 0.0;
+
+		for (int j = 0; j < size; j++) {
+			if (i != j)
+				sum += variables[j] * (A[i][j] + A[j][i]);
+		}
+		sum += A[i][i];
+		
+		// Penalty
+		if(oscillation) {
+			sum -= isElementFeasible(i) ? 0:PENALTY;
+		}
+
+		return sum;
+	}
+
+    
+    /**
+     * Check if solution with the element i is feasible. 
+     * @param i element to be inserted.
+     * @return true if feasible, false otherwise.
+     */
+    private boolean isElementFeasible(Integer i) {
+    	double sum;
+    	boolean feasible = true;
+    	
+    	// Check all triples
+    	for(List<Integer> t : T) {
+    		
+    		// If the element is in a triple, check if insertion violates triple.
+            if(t.contains(i+1)) {
+            	sum = 0;
+            	for(Integer k : t) {
+            		sum += this.variables[k-1];
+            	}
+            	
+            	if (sum == 2.0 && this.variables[i] == 0.0) {
+            		feasible = false;
+            		break;
+            	}
+            }
+    	}
+    	
+    	return feasible;
+    }
 }
