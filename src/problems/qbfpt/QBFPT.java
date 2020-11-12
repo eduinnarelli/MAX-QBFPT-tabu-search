@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
 import problems.qbf.QBF_Inverse;
 
 /**
@@ -23,11 +24,15 @@ public class QBFPT extends QBF_Inverse {
     private final Set<List<Integer>> T;
     
     /**
-     * Variable that indicate if strategic oscillation is active.
+     * Variable that indicates penalty for strategic oscillation.
      */
-    private final boolean oscillation;
     private final double PENALTY = 100;
 
+    /**
+     * Dictionary of violations per element.
+     */
+    private HashMap<Integer,Integer> violations;
+    
     /**
      * Constructor for the QBFPT class.
      * 
@@ -38,10 +43,9 @@ public class QBFPT extends QBF_Inverse {
      * @throws IOException
      *      Necessary for I/O operations.
      */
-    public QBFPT(String filename, boolean oscillation) throws IOException {
+    public QBFPT(String filename) throws IOException {
         super(filename);
         T = generateTriples();
-        this.oscillation = oscillation;
     }
 
     /**
@@ -50,6 +54,14 @@ public class QBFPT extends QBF_Inverse {
      * @return {@link #T}.
      */
     public Set<List<Integer>> getT() { return T; };
+    
+    /**
+     * violations setter.
+     * @param {@link #violations}
+     */
+    public void setViolations(HashMap<Integer,Integer> _violations) {
+    	violations = _violations;
+    }
     
     /**
      * Generates the prohibited triples set T, where:
@@ -155,7 +167,30 @@ public class QBFPT extends QBF_Inverse {
     /**
      * {@inheritDoc}
      * 
-     * Adds penalty if solution if infeasible.
+     * Adds penalty if solution is infeasible.
+     */
+    @Override
+    public Double evaluateQBF() {
+
+		Double aux = (double) 0, sum = (double) 0;
+		Double vecAux[] = new Double[size];
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				aux += variables[j] * (A[i][j] - violations.get(j)*PENALTY);
+			}
+			vecAux[i] = aux;
+			sum += aux * variables[i];
+			aux = (double) 0;
+		}
+
+		return -sum;
+    }
+    
+    /**
+     * {@inheritDoc}
+     * 
+     * Adds penalty if solution is infeasible.
      */
     @Override
 	protected Double evaluateContributionQBF(int i) {
@@ -164,14 +199,14 @@ public class QBFPT extends QBF_Inverse {
 
 		for (int j = 0; j < size; j++) {
 			if (i != j)
-				sum += variables[j] * (A[i][j] + A[j][i]);
+				sum += variables[j] * (A[i][j] + A[j][i] - violations.get(j)*PENALTY);
 		}
-		sum += A[i][i];
+		sum += A[i][i] - violations.get(i)*PENALTY;
 		
 		// Penalty
-		if(oscillation) {
-			sum -= isElementFeasible(i) ? 0:PENALTY;
-		}
+		//if(oscillation) {
+		//	sum -= isElementFeasible(i) ? 0:PENALTY;
+		//}
 
 		return sum;
 	}
