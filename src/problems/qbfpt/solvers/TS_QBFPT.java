@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.HashMap;
-import java.lang.Math;
 
 import problems.qbf.solvers.TS_QBF;
 import problems.qbfpt.QBFPT;
@@ -25,7 +23,7 @@ public class TS_QBFPT extends TS_QBF {
 	}
 	
 	/**
-     * Step of iterations on wich the penalty will be dynamically adjusted.
+     * Step of iterations on which the penalty will be dynamically adjusted.
      */
 	private final Integer penaltyAdjustmentStep = 25;
 	
@@ -43,7 +41,7 @@ public class TS_QBFPT extends TS_QBF {
 	private final SearchStrategy searchType;
 	
 	/**
-	 * 
+	 * Variable that indicates if strategic oscillation is active. 
 	 */
 	private final boolean oscillation;
 
@@ -103,21 +101,15 @@ public class TS_QBFPT extends TS_QBF {
         // Store numbers in solution and _CL as hash sets.
         Set<Integer> sol = new HashSet<Integer>(currentSol);
         Set<Integer> _CL = new HashSet<Integer>();
-        HashMap<Integer, Integer> _violator = new HashMap<>();
+        Integer _violator[] = new Integer[ObjFunction.getDomainSize()];
 
         // Initialize _CL with all elements not in solution.
         for (Integer e = 0; e < ObjFunction.getDomainSize(); e++) {
-        	_violator.put(e, 0);
+        	_violator[e]=0;
             if (!sol.contains(e)) {
                 _CL.add(e);
             }
         }
-        
-        // If strategic oscillation is active, no need to remove infeasible elements.
-        //if(oscillation) {
-        //	CL = new ArrayList<Integer>(_CL);
-        //	return;
-        //}
 
         Integer e1, e2, e3;
         Integer infeasible;
@@ -149,7 +141,7 @@ public class TS_QBFPT extends TS_QBF {
             
             if(infeasible > -1) {
             	if(oscillation) 
-            		_violator.put(infeasible, _violator.get(infeasible) + 1);
+            		_violator[infeasible]+=1;
             	else 
             		_CL.remove(infeasible);
             }

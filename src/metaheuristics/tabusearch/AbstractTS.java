@@ -223,11 +223,12 @@ public abstract class AbstractTS<E> {
 	 * @return The best feasible solution obtained throughout all iterations.
 	 */
 	public Solution<E> solve() {
-
 		boolean isFeasible;
+		
 		incumbentSol = createEmptySol();
 		constructiveHeuristic();
 		TL = makeTL();
+		
 		lastFeasibleIteration = 0;
 		for (iterationsCount = 0; iterationsCount < iterations; iterationsCount++) {
 			neighborhoodMove();
