@@ -61,6 +61,16 @@ public abstract class AbstractTS<E> {
 	protected Integer iterations;
 	
 	/**
+	 * current iteration.
+	 */
+	protected Integer iterationsCount;
+	
+	/**
+	 * iteration where the last feasible solution was found.
+	 */
+	protected Integer lastFeasibleIteration;
+	
+	/**
 	 * the tabu tenure.
 	 */
 	protected Integer tenure;
@@ -214,15 +224,20 @@ public abstract class AbstractTS<E> {
 	 */
 	public Solution<E> solve() {
 
+		boolean isFeasible;
 		incumbentSol = createEmptySol();
 		constructiveHeuristic();
 		TL = makeTL();
-		for (int i = 0; i < iterations; i++) {
+		lastFeasibleIteration = 0;
+		for (iterationsCount = 0; iterationsCount < iterations; iterationsCount++) {
 			neighborhoodMove();
-			if (incumbentSol.cost > currentSol.cost && isSolutionFeasible(currentSol)) {
+			isFeasible = isSolutionFeasible(currentSol);
+			if(isFeasible)
+				this.lastFeasibleIteration = iterationsCount;
+			if (incumbentSol.cost > currentSol.cost && isFeasible) {
 				incumbentSol = new Solution<E>(currentSol);
 				if (verbose)
-					System.out.println("(Iter. " + i + ") BestSol = " + incumbentSol);
+					System.out.println("(Iter. " + iterationsCount + ") BestSol = " + incumbentSol);
 			}
 		}
 

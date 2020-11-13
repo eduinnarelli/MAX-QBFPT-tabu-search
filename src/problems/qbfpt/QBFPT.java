@@ -26,7 +26,7 @@ public class QBFPT extends QBF_Inverse {
     /**
      * Variable that indicates penalty for strategic oscillation.
      */
-    private final double PENALTY = 100;
+    private double PENALTY = 100;
 
     /**
      * Dictionary of violations per element.
@@ -62,6 +62,21 @@ public class QBFPT extends QBF_Inverse {
     public void setViolations(HashMap<Integer,Integer> _violations) {
     	violations = _violations;
     }
+    
+    /**
+     * PENALTY setter.
+     * @param {@link #violations}
+     */
+    public void setPenalty(double _penalty) {
+    	PENALTY = _penalty;
+    }
+    
+    /**
+     * PENALTY getter.
+     * 
+     * @return {@link #T}.
+     */
+    public double getPenalty() { return PENALTY; };
     
     /**
      * Generates the prohibited triples set T, where:

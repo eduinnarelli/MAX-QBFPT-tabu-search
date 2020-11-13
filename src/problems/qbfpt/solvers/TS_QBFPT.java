@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.lang.Math;
 
 import problems.qbf.solvers.TS_QBF;
 import problems.qbfpt.QBFPT;
@@ -22,6 +23,11 @@ public class TS_QBFPT extends TS_QBF {
 		FI,
 		BI
 	}
+	
+	/**
+     * Step of iterations on wich the penalty will be dynamically adjusted.
+     */
+	private final Integer penaltyAdjustmentStep = 25;
 	
 	private final Integer fake = -1;
 	
@@ -82,6 +88,17 @@ public class TS_QBFPT extends TS_QBF {
      */
     @Override
     public void updateCL() {
+    	
+    	// Adjust the oscillation penalty based on the number of infeasible solutions found
+    	// in the previous penaltyAdjustmentStep iterations
+    	if (iterationsCount!=null && (iterationsCount+1) % penaltyAdjustmentStep == 0)
+    	{
+    		double penalty = ((QBFPT)ObjFunction).getPenalty();
+    		if(iterationsCount - lastFeasibleIteration >= penaltyAdjustmentStep-1)
+    			((QBFPT)ObjFunction).setPenalty(Math.min(penalty*2, 1000000.0));
+    		else if((iterationsCount+1)%200 == 0)
+    			((QBFPT)ObjFunction).setPenalty(Math.max(penalty/2, 0.0000001));
+    	}
 
         // Store numbers in solution and _CL as hash sets.
         Set<Integer> sol = new HashSet<Integer>(currentSol);
