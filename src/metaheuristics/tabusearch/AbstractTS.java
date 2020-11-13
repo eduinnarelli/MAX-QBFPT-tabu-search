@@ -1,10 +1,8 @@
-/**
- * 
- */
 package metaheuristics.tabusearch;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import problems.Evaluator;
@@ -13,45 +11,45 @@ import solutions.Solution;
 /**
  * Abstract class for metaheuristic Tabu Search. It consider a minimization problem.
  * 
- * @author ccavellucci, fusberti
+ * @author ccavellucci, fusberti, einnarelli, jmenezes, vferrari
  * @param <E>
- *            Generic type of the candidate to enter the solution.
+ *		Generic type of the candidate to enter the solution.
  */
 public abstract class AbstractTS<E> {
 
 	/**
 	 * flag that indicates whether the code should print more information on
-	 * screen
+	 * screen.
 	 */
 	public static boolean verbose = true;
 
 	/**
-	 * a random number generator
+	 * a random number generator.
 	 */
 	static Random rng = new Random(0);
 
 	/**
-	 * the objective function being optimized
+	 * the objective function being optimized.
 	 */
 	protected Evaluator<E> ObjFunction;
 
 	/**
-	 * the incumbent solution cost
+	 * the incumbent solution cost.
 	 */
 	protected Double incumbentCost;
 
 	/**
-	 * the current solution cost
+	 * the current solution cost.
 	 */
 	protected Double currentCost;
 
 	/**
-	 * the incumbent solution
+	 * the incumbent solution.
 	 */
 	protected Solution<E> incumbentSol;
 
 	/**
-	 * the current solution
+	 * the current solution.
 	 */
 	protected Solution<E> currentSol;
 
@@ -79,6 +77,21 @@ public abstract class AbstractTS<E> {
 	 * the Tabu List of elements to enter the solution.
 	 */
 	protected ArrayDeque<E> TL;
+
+	/**
+	 * the consecutive number of times the solution did not improve.
+	 */
+	protected Integer consecFailures;
+
+	/**
+	 * array that informs how long a component has been used.
+	 */
+	protected Integer[] recency;
+
+	/**
+	 * intensification parameters.
+	 */
+	protected Intensificator intensificator;
 
 	/**
 	 * Creates the Candidate List, which is an ArrayList of candidate elements
@@ -133,19 +146,47 @@ public abstract class AbstractTS<E> {
 	public abstract Solution<E> neighborhoodMove();
 
 	/**
+	 * Updates the {@link #recency} array.
+	 */
+	public abstract void updateRecency();
+
+	/**
+	 * Initialize the intensification method. In this method, the search 
+	 * should restart in the incumbent solution with some components fixed,
+	 * such as the ones that most appeared in solutions recently ({@link 
+	 * #recency}).
+	 */
+	public abstract void startIntensification();
+
+	/**
+	 * Stop the intensification method, i.e., revert the components fix
+	 * applied in the method initialization.
+	 */
+	public abstract void endIntensification();
+
+	/**
 	 * Constructor for the AbstractTS class.
 	 * 
 	 * @param objFunction
-	 *            The objective function being minimized.
+	 *		The objective function being minimized.
 	 * @param tenure
-	 *            The Tabu tenure parameter. 
+	 *		The Tabu tenure parameter. 
 	 * @param iterations
-	 *            The number of iterations which the TS will be executed.
+	 *		The number of iterations which the TS will be executed.
+	 * @param intensificator
+	 * 		Intensificator parameters. If {@code null}, intensification is not
+	 * 		applied.
 	 */
-	public AbstractTS(Evaluator<E> objFunction, Integer tenure, Integer iterations) {
+	public AbstractTS(
+		Evaluator<E> objFunction, 
+		Integer tenure, 
+		Integer iterations, 
+		Intensificator intensificator
+	){
 		this.ObjFunction = objFunction;
 		this.tenure = tenure;
 		this.iterations = iterations;
+		this.intensificator = intensificator;
 	}
 
 	/**
@@ -215,18 +256,82 @@ public abstract class AbstractTS<E> {
 	public Solution<E> solve() {
 
 		incumbentSol = createEmptySol();
-		constructiveHeuristic();
 		TL = makeTL();
+		consecFailures = Integer.valueOf(0);
+
+		// Only make recency array if intensification is enabled
+		if (intensificator != null) {
+			makeRecency();
+		}
+
+		// Build a initial solution
+		constructiveHeuristic();
+
 		for (int i = 0; i < iterations; i++) {
+
+			/* Start intensification if it's enabled, not running and the 
+			 * number of consecutive failures reached the intensificator
+			 * tolerance. */
+			if (
+				intensificator != null && !intensificator.getRunning() && 
+				consecFailures >= intensificator.getTolerance()
+			) {
+				consecFailures = 0; // Reset failures
+				startIntensification();
+				if (verbose)
+					System.out.println("Intensification started at: " + i);
+			}
+
+			// Perform local search
 			neighborhoodMove();
+
+			// Update incumbent if a better solution was found
 			if (incumbentSol.cost > currentSol.cost) {
+				consecFailures = 0; // Reset failures
 				incumbentSol = new Solution<E>(currentSol);
 				if (verbose)
 					System.out.println("(Iter. " + i + ") BestSol = " + incumbentSol);
+			} 
+			
+			// Register consecutive failure otherwise
+			else {
+				consecFailures++;
+			}
+			
+			if (intensificator != null) {
+
+				// Only update recency array if intensification is enabled
+				updateRecency();
+
+				if (intensificator.getRunning()) {
+
+					// Stop intensification if there are no iterations left
+					if (intensificator.getRemainingIt() == 0) {
+						endIntensification();
+						if (verbose)
+							System.out.println("Intensification ended at: " + i);
+					}
+
+					// Decrement remaining intensification iterations otherwise
+					else {
+						intensificator.setRemainingIt(
+							intensificator.getRemainingIt() - 1
+						);
+					}
+
+				}
 			}
 		}
 
 		return incumbentSol;
+	}
+
+	/**
+	 * Initialize the recency array with zeros.
+	 */
+	public void makeRecency() {
+		recency = new Integer[ObjFunction.getDomainSize()];
+		Arrays.fill(recency, 0);
 	}
 
 	/**

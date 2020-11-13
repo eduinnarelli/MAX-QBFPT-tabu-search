@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import metaheuristics.tabusearch.Intensificator;
 import problems.qbf.solvers.TS_QBF;
 import problems.qbfpt.QBFPT;
 import solutions.Solution;
@@ -39,26 +40,30 @@ public class TS_QBFPT extends TS_QBF {
      * Constructor for the TS_QBFPT class.
      * 
      * @param alpha
-     *            The Tabu tenure parameter.
+     *      The Tabu tenure parameter.
      * @param iterations
-     *            The number of iterations which the TS will be executed.
+     *      The number of iterations which the TS will be executed.
      * @param filename
-     *            Name of the file for which the objective function parameters
-     *            should be read.
+     *      Name of the file for which the objective function parameters
+     *      should be read.
      * @param type
-     * 			  Local search strategy type, being either first improving or
-     * 			  best improving.
+     *      Local search strategy type, being either first improving or
+     *      best improving.
+     * @param intensificator
+     *      Intensificator parameters. If {@code null}, intensification is not
+     *      applied.
      * @throws IOException
-     *            Necessary for I/O operations.
+     *      Necessary for I/O operations.
      */
     public TS_QBFPT(
         Integer tenure, 
         Integer iterations, 
         String filename,
-        SearchStrategy type
+        SearchStrategy type,
+        Intensificator intensificator
     ) throws IOException {
 
-        super(tenure, iterations, filename);
+        super(tenure, iterations, filename, intensificator);
 
         // Instantiate QBFPT problem, store T and update objective reference.
         QBFPT qbfpt = new QBFPT(filename);
@@ -148,8 +153,11 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Evaluate insertions
 		for (Integer candIn : CL) {
-			Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, currentSol);
-			if (!TL.contains(candIn) || currentSol.cost+deltaCost < incumbentSol.cost) {
+
+            Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, currentSol);
+            Boolean ignoreCand = TL.contains(candIn) || fixed.contains(candIn);
+
+			if (!ignoreCand || currentSol.cost+deltaCost < incumbentSol.cost) {
 				if (deltaCost < minDeltaCost) {
 					minDeltaCost = deltaCost;
 					bestCandIn = candIn;
@@ -161,8 +169,11 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Evaluate removals
 		for (Integer candOut : currentSol) {
-			Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, currentSol);
-			if (!TL.contains(candOut) || currentSol.cost+deltaCost < incumbentSol.cost) {
+
+            Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, currentSol);
+            Boolean ignoreCand = TL.contains(candOut) || fixed.contains(candOut);
+
+			if (!ignoreCand || currentSol.cost+deltaCost < incumbentSol.cost) {
 				if (deltaCost < minDeltaCost) {
 					minDeltaCost = deltaCost;
 					bestCandIn = null;
@@ -175,8 +186,15 @@ public class TS_QBFPT extends TS_QBF {
 		// Evaluate exchanges
 		for (Integer candIn : CL) {
 			for (Integer candOut : currentSol) {
-				Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, currentSol);
-				if ((!TL.contains(candIn) && !TL.contains(candOut)) || currentSol.cost+deltaCost < incumbentSol.cost) {
+
+                Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, currentSol);
+                Boolean ignoreCands =
+					TL.contains(candIn) ||
+					TL.contains(candOut) ||
+					fixed.contains(candIn) ||
+					fixed.contains(candOut);
+
+				if (!ignoreCands || currentSol.cost+deltaCost < incumbentSol.cost) {
 					if (deltaCost < minDeltaCost) {
 						minDeltaCost = deltaCost;
 						bestCandIn = candIn;
@@ -185,8 +203,10 @@ public class TS_QBFPT extends TS_QBF {
 						break;
 					}
 				}
-			}
-			if(done) break;
+            }
+            
+            if (done) break;
+            
 		}
 		
 		// Implement the best of the first non-tabu moves.
@@ -217,10 +237,10 @@ public class TS_QBFPT extends TS_QBF {
     public static void main(String[] args) throws IOException {
 
         long startTime = System.currentTimeMillis();
-        TS_QBF ts = new TS_QBFPT(20, 
-        						 10000, 
-        						 "instances/qbf200",
-        						 SearchStrategy.BI);
+        Intensificator intensificator = new Intensificator(1000, 100);
+        TS_QBF ts = new TS_QBFPT(
+            20, 10000, "instances/qbf100", SearchStrategy.BI, intensificator
+        );
         Solution<Integer> bestSol = ts.solve();
         System.out.println("maxVal = " + bestSol);
         long endTime   = System.currentTimeMillis();
