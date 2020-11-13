@@ -263,8 +263,12 @@ public abstract class AbstractTS<E> {
 	 * 
 	 * @return The best feasible solution obtained throughout all iterations.
 	 */
-	public Solution<E> solve() {
+	public Solution<E> solve(double maxTime) {
 		boolean isFeasible;
+		
+		long startTime = System.currentTimeMillis();
+		long endTime;
+		double totalTime;
 
 		incumbentSol = createEmptySol();
 		TL = makeTL();
@@ -336,7 +340,14 @@ public abstract class AbstractTS<E> {
 					} // end if intensificator iteration
 				}	  // end if intensificator running
 			}		  // end if intensificator not null
-		}			  // end for
+			
+			endTime   = System.currentTimeMillis();
+			totalTime = (endTime - startTime)/(double)1000;
+
+			//if it exceeded the time limit, break the loop
+			if(totalTime > maxTime) break;
+
+		}
 
 		return incumbentSol;
 	}

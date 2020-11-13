@@ -310,7 +310,7 @@ public class TS_QBFPT extends TS_QBF {
         TS_QBF ts = new TS_QBFPT(
             20, 10000, "instances/qbf200", SearchStrategy.BI, intensificator, true
         );
-        Solution<Integer> bestSol = ts.solve();
+        Solution<Integer> bestSol = ts.solve(1800.0);
         System.out.println("maxVal = " + bestSol);
         long endTime   = System.currentTimeMillis();
         long totalTime = endTime - startTime;

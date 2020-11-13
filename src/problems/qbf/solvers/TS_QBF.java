@@ -307,7 +307,7 @@ public class TS_QBF extends AbstractTS<Integer> {
 
 		long startTime = System.currentTimeMillis();
 		TS_QBF tabusearch = new TS_QBF(20, 10000, "instances/qbf020", null);
-		Solution<Integer> bestSol = tabusearch.solve();
+		Solution<Integer> bestSol = tabusearch.solve(1800.0);
 		System.out.println("maxVal = " + bestSol);
 		long endTime   = System.currentTimeMillis();
 		long totalTime = endTime - startTime;
