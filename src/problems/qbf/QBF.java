@@ -39,6 +39,16 @@ public class QBF implements Evaluator<Integer> {
 	 * The matrix A of coefficients for the QBF f(x) = x'.A.x
 	 */
 	public Double[][] A;
+	
+    /**
+     * Variable that indicates penalty for strategic oscillation.
+     */
+    private double PENALTY = 100;
+
+    /**
+     * Array of violations per element.
+     */
+    private Integer violations[];
 
 	/**
 	 * The constructor for QuadracticBinaryFunction class. The filename of the
@@ -53,7 +63,32 @@ public class QBF implements Evaluator<Integer> {
 	public QBF(String filename) throws IOException {
 		size = readInput(filename);
 		variables = allocateVariables();
+		violations = new Integer[size];
+		Arrays.fill(violations, 0);
 	}
+	
+    /**
+     * violations setter.
+     * @param {@link #violations}
+     */
+    public void setViolations(Integer _violations[]) {
+    	violations = _violations;
+    }
+    
+    /**
+     * PENALTY setter.
+     * @param {@link #violations}
+     */
+    public void setPenalty(double _penalty) {
+    	PENALTY = _penalty;
+    }
+    
+    /**
+     * PENALTY getter.
+     * 
+     * @return {@link #T}.
+     */
+    public double getPenalty() { return PENALTY; };
 
 	/**
 	 * Evaluates the value of a solution by transforming it into a vector. This
@@ -113,7 +148,7 @@ public class QBF implements Evaluator<Integer> {
 
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
-				aux += variables[j] * A[i][j];
+				aux += variables[j] * (A[i][j] - violations[j]*PENALTY);
 			}
 			vecAux[i] = aux;
 			sum += aux * variables[i];
@@ -252,9 +287,9 @@ public class QBF implements Evaluator<Integer> {
 
 		for (int j = 0; j < size; j++) {
 			if (i != j)
-				sum += variables[j] * (A[i][j] + A[j][i]);
+				sum += variables[j] * (A[i][j] + A[j][i] - violations[j]*PENALTY);
 		}
-		sum += A[i][i];
+		sum += A[i][i] - violations[i]*PENALTY;
 
 		return sum;
 	}

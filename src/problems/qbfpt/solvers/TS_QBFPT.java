@@ -25,6 +25,11 @@ public class TS_QBFPT extends TS_QBF {
 	
 	private final Integer fake = -1;
 	
+	/**
+     * Step of iterations on which the penalty will be dynamically adjusted.
+     */
+	private final Integer penaltyAdjustmentStep = 25;
+	
     /**
      * The set T of prohibited triples.
      */
@@ -35,6 +40,11 @@ public class TS_QBFPT extends TS_QBF {
 	 * Can be first-improving (FI) or best-improving (BI). 
 	 */
 	private final SearchStrategy searchType;
+	
+	/**
+	 * Variable that indicates if strategic oscillation is active. 
+	 */
+	private final boolean oscillation;
 
     /**
      * Constructor for the TS_QBFPT class.
@@ -52,6 +62,8 @@ public class TS_QBFPT extends TS_QBF {
      * @param intensificator
      *      Intensificator parameters. If {@code null}, intensification is not
      *      applied.
+     * @param oscillation
+     * 		Indicates if strategic oscillation is active or not.
      * @throws IOException
      *      Necessary for I/O operations.
      */
@@ -60,7 +72,8 @@ public class TS_QBFPT extends TS_QBF {
         Integer iterations, 
         String filename,
         SearchStrategy type,
-        Intensificator intensificator
+        Intensificator intensificator,
+        boolean oscillation
     ) throws IOException {
 
         super(tenure, iterations, filename, intensificator);
@@ -70,6 +83,7 @@ public class TS_QBFPT extends TS_QBF {
         T = qbfpt.getT();
         ObjFunction = qbfpt;
         searchType = type;
+        this.oscillation = oscillation;
 
     }
 
@@ -80,48 +94,70 @@ public class TS_QBFPT extends TS_QBF {
      */
     @Override
     public void updateCL() {
+    	
+    	// Adjust the oscillation penalty based on the number of infeasible solutions found
+    	// in the previous penaltyAdjustmentStep iterations
+    	if (iterationsCount!=null && (iterationsCount+1) % penaltyAdjustmentStep == 0)
+    	{
+    		double penalty = ((QBFPT)ObjFunction).getPenalty();
+    		if(iterationsCount - lastFeasibleIteration >= penaltyAdjustmentStep-1)
+    			((QBFPT)ObjFunction).setPenalty(Math.min(penalty*2, 1000000.0));
+    		else if((iterationsCount+1)%200 == 0)
+    			((QBFPT)ObjFunction).setPenalty(Math.max(penalty/2, 0.0000001));
+    	}
 
         // Store numbers in solution and _CL as hash sets.
         Set<Integer> sol = new HashSet<Integer>(currentSol);
         Set<Integer> _CL = new HashSet<Integer>();
+        Integer _violator[] = new Integer[ObjFunction.getDomainSize()];
 
         // Initialize _CL with all elements not in solution.
         for (Integer e = 0; e < ObjFunction.getDomainSize(); e++) {
+        	_violator[e]=0;
             if (!sol.contains(e)) {
                 _CL.add(e);
             }
         }
 
+        Integer e1, e2, e3;
+        Integer infeasible;
         for (List<Integer> t : T) {
-
+        	infeasible = -1;
+        	
             /**
              * Detach elements from (e1, e2, e3). They are stored as numbers 
              * from [0, n-1] in sol. and CL, different than in T ([1, n]).
              */
-            Integer e1, e2, e3;
             e1 = t.get(0) - 1;
             e2 = t.get(1) - 1;
             e3 = t.get(2) - 1;
 
-            // e1 and e2 in solution -> remove e3 from CL.
+            // e1 and e2 in solution -> e3 infeasible.
             if (sol.contains(e1) && sol.contains(e2)) {
-                _CL.remove(e3); // if not in CL this has no effect
+                infeasible = e3;
             }
 
-            // e1 and e3 in solution -> remove e2 from CL.
+            // e1 and e3 in solution -> e2 infeasible.
             else if (sol.contains(e1) && sol.contains(e3)) {
-                _CL.remove(e2); // if not in CL this has no effect
+                infeasible = e2;
             }
 
-            // e2 and e3 in solution -> remove e1 from CL.
+            // e2 and e3 in solution -> e1 infeasible.
             else if (sol.contains(e2) && sol.contains(e3)) {
-                _CL.remove(e1); // if not in CL this has no effect
+                infeasible = e1;
+            }
+            
+            if(infeasible > -1) {
+            	if(oscillation) 
+            		_violator[infeasible]+=1;
+            	else 
+            		_CL.remove(infeasible);
             }
 
         }
 
         CL = new ArrayList<Integer>(_CL);
-
+        ((QBFPT)ObjFunction).setViolations(_violator);
     }
     
 	/**
@@ -231,6 +267,39 @@ public class TS_QBFPT extends TS_QBF {
 		return null;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * Check if any triple restriction is violated.
+	 */
+	@Override
+    public boolean isSolutionFeasible(Solution<Integer> sol) {
+    	boolean feasible = true;
+        Integer e1, e2, e3;
+        
+        // Check strategic oscillation.
+        if(!oscillation) return true;
+        
+    	for (List<Integer> t : T) {
+
+            /**
+             * Detach elements from (e1, e2, e3). They are stored as numbers 
+             * from [0, n-1] in sol., different than in T ([1, n]).
+             */
+            e1 = t.get(0) - 1;
+            e2 = t.get(1) - 1;
+            e3 = t.get(2) - 1;
+
+            // e1, e2 and e3 in solution -> infeasible.
+            if (sol.contains(e1) && sol.contains(e2) && sol.contains(e3)) {
+            	feasible = false;
+            	break;
+            }
+        }
+    	
+    	return feasible;
+    }
+
     /**
      * A main method used for testing the Tabu Search metaheuristic.
      */
@@ -239,7 +308,7 @@ public class TS_QBFPT extends TS_QBF {
         long startTime = System.currentTimeMillis();
         Intensificator intensificator = new Intensificator(1000, 100);
         TS_QBF ts = new TS_QBFPT(
-            20, 10000, "instances/qbf100", SearchStrategy.BI, intensificator
+            20, 10000, "instances/qbf200", SearchStrategy.BI, intensificator, true
         );
         Solution<Integer> bestSol = ts.solve();
         System.out.println("maxVal = " + bestSol);

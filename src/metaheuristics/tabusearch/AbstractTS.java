@@ -57,6 +57,16 @@ public abstract class AbstractTS<E> {
 	 * the number of iterations the TS main loop executes.
 	 */
 	protected Integer iterations;
+
+	/**
+	 * current iteration.
+	 */
+	protected Integer iterationsCount;
+	
+	/**
+	 * iteration where the last feasible solution was found.
+	 */
+	protected Integer lastFeasibleIteration;
 	
 	/**
 	 * the tabu tenure.
@@ -254,6 +264,7 @@ public abstract class AbstractTS<E> {
 	 * @return The best feasible solution obtained throughout all iterations.
 	 */
 	public Solution<E> solve() {
+		boolean isFeasible;
 
 		incumbentSol = createEmptySol();
 		TL = makeTL();
@@ -267,7 +278,8 @@ public abstract class AbstractTS<E> {
 		// Build a initial solution
 		constructiveHeuristic();
 
-		for (int i = 0; i < iterations; i++) {
+		lastFeasibleIteration = 0;
+		for (iterationsCount = 0; iterationsCount < iterations; iterationsCount++) {
 
 			/* Start intensification if it's enabled, not running and the 
 			 * number of consecutive failures reached the intensificator
@@ -279,19 +291,23 @@ public abstract class AbstractTS<E> {
 				consecFailures = 0; // Reset failures
 				startIntensification();
 				if (verbose)
-					System.out.println("Intensification started at: " + i);
+					System.out.println("Intensification started at: " + iterationsCount);
 			}
 
 			// Perform local search
 			neighborhoodMove();
 
 			// Update incumbent if a better solution was found
-			if (incumbentSol.cost > currentSol.cost) {
+			isFeasible = isSolutionFeasible(currentSol);
+			if(isFeasible)
+				this.lastFeasibleIteration = iterationsCount;
+			
+			if (incumbentSol.cost > currentSol.cost && isFeasible) {
 				consecFailures = 0; // Reset failures
 				incumbentSol = new Solution<E>(currentSol);
 				if (verbose)
-					System.out.println("(Iter. " + i + ") BestSol = " + incumbentSol);
-			} 
+					System.out.println("(Iter. " + iterationsCount + ") BestSol = " + incumbentSol);
+			}
 			
 			// Register consecutive failure otherwise
 			else {
@@ -309,7 +325,7 @@ public abstract class AbstractTS<E> {
 					if (intensificator.getRemainingIt() == 0) {
 						endIntensification();
 						if (verbose)
-							System.out.println("Intensification ended at: " + i);
+							System.out.println("Intensification ended at: " + iterationsCount);
 					}
 
 					// Decrement remaining intensification iterations otherwise
@@ -317,11 +333,10 @@ public abstract class AbstractTS<E> {
 						intensificator.setRemainingIt(
 							intensificator.getRemainingIt() - 1
 						);
-					}
-
-				}
-			}
-		}
+					} // end if intensificator iteration
+				}	  // end if intensificator running
+			}		  // end if intensificator not null
+		}			  // end for
 
 		return incumbentSol;
 	}
@@ -343,6 +358,15 @@ public abstract class AbstractTS<E> {
 	 */
 	public Boolean constructiveStopCriteria() {
 		return (currentCost > currentSol.cost) ? false : true;
+	}
+	
+	/**
+	 * Check if solution is feasible.
+	 * @param sol Current solution to check.
+	 * @return true if feasible, false otherwise.
+	 */
+	public boolean isSolutionFeasible(Solution<E> sol) {
+		return true;
 	}
 
 }

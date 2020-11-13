@@ -145,4 +145,34 @@ public class QBFPT extends QBF_Inverse {
 
     }
     
+    /**
+     * Check if solution with the element i is feasible. 
+     * @param i element to be inserted.
+     * @return true if feasible, false otherwise.
+     
+    private boolean isElementFeasible(Integer i) {
+    	double sum;
+    	boolean feasible = true;
+    	
+    	// Check all triples
+    	for(List<Integer> t : T) {
+    		
+    		// If the element is in a triple, check if insertion violates triple.
+            if(t.contains(i+1)) {
+            	sum = 0;
+            	for(Integer k : t) {
+            		sum += this.variables[k-1];
+            	}
+            	
+            	if (sum == 2.0 && this.variables[i] == 0.0) {
+            		feasible = false;
+            		break;
+            	}
+            }
+    	}
+    	
+    	return feasible;
+    }
+    */
+    
 }
