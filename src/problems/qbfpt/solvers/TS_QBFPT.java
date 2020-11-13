@@ -153,8 +153,11 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Evaluate insertions
 		for (Integer candIn : CL) {
-			Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, currentSol);
-			if (!TL.contains(candIn) || currentSol.cost+deltaCost < incumbentSol.cost) {
+
+            Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, currentSol);
+            Boolean ignoreCand = TL.contains(candIn) || fixed.contains(candIn);
+
+			if (!ignoreCand || currentSol.cost+deltaCost < incumbentSol.cost) {
 				if (deltaCost < minDeltaCost) {
 					minDeltaCost = deltaCost;
 					bestCandIn = candIn;
@@ -166,8 +169,11 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Evaluate removals
 		for (Integer candOut : currentSol) {
-			Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, currentSol);
-			if (!TL.contains(candOut) || currentSol.cost+deltaCost < incumbentSol.cost) {
+
+            Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, currentSol);
+            Boolean ignoreCand = TL.contains(candOut) || fixed.contains(candOut);
+
+			if (!ignoreCand || currentSol.cost+deltaCost < incumbentSol.cost) {
 				if (deltaCost < minDeltaCost) {
 					minDeltaCost = deltaCost;
 					bestCandIn = null;
@@ -180,8 +186,15 @@ public class TS_QBFPT extends TS_QBF {
 		// Evaluate exchanges
 		for (Integer candIn : CL) {
 			for (Integer candOut : currentSol) {
-				Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, currentSol);
-				if ((!TL.contains(candIn) && !TL.contains(candOut)) || currentSol.cost+deltaCost < incumbentSol.cost) {
+
+                Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, currentSol);
+                Boolean ignoreCands =
+					TL.contains(candIn) ||
+					TL.contains(candOut) ||
+					fixed.contains(candIn) ||
+					fixed.contains(candOut);
+
+				if (!ignoreCands || currentSol.cost+deltaCost < incumbentSol.cost) {
 					if (deltaCost < minDeltaCost) {
 						minDeltaCost = deltaCost;
 						bestCandIn = candIn;
@@ -190,8 +203,10 @@ public class TS_QBFPT extends TS_QBF {
 						break;
 					}
 				}
-			}
-			if(done) break;
+            }
+            
+            if (done) break;
+            
 		}
 		
 		// Implement the best of the first non-tabu moves.

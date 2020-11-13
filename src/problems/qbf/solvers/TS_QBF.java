@@ -19,7 +19,7 @@ import solutions.Solution;
  * Metaheuristic TS (Tabu Search) for obtaining an optimal solution to a QBF
  * (Quadractive Binary Function -- {@link #QuadracticBinaryFunction}).
  * Since by default this TS considers minimization problems, an inverse QBF
- *  function is adopted.
+ * function is adopted.
  * 
  * @author ccavellucci, fusberti, einnarelli, jmenezes, vferrari
  */
@@ -30,7 +30,7 @@ public class TS_QBF extends AbstractTS<Integer> {
 	/**
 	 * Set of fixed variables, always empty if intensification is disabled.
 	 */
-	private Set<Integer> fixed;
+	protected Set<Integer> fixed;
 
 	/**
 	 * Constructor for the TS_QBF class. An inverse QBF objective function is
@@ -47,7 +47,7 @@ public class TS_QBF extends AbstractTS<Integer> {
 	 * 		Intensificator parameters. If {@code null}, intensification is not
 	 * 		applied.
 	 * @throws IOException
-	 *             necessary for I/O operations.
+	 *		Necessary for I/O operations.
 	 */
 	public TS_QBF(
 		Integer tenure,
