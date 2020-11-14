@@ -6,9 +6,12 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import metaheuristics.grasp.AbstractGRASP;
 import metaheuristics.tabusearch.Intensificator;
 import problems.qbf.solvers.TS_QBF;
 import problems.qbfpt.QBFPT;
+import problems.qbfpt.solvers.GRASP_QBFPT.BiasFunction;
+import problems.qbfpt.solvers.GRASP_QBFPT.SearchStrategy;
 import solutions.Solution;
 
 /**
@@ -300,22 +303,86 @@ public class TS_QBFPT extends TS_QBF {
     	return feasible;
     }
 
-    /**
+	/**
+	 * Run Tabu Search for QBFPT.
+	 */
+	public static void run(int tenure, int maxIt, String filename,
+						   SearchStrategy searchType,
+						   Intensificator intensify,
+						   boolean oscillation,
+						   double maxTime) 
+					   throws IOException {
+		
+		long startTime = System.currentTimeMillis();
+		TS_QBFPT tabu = new TS_QBFPT(tenure,
+									 maxIt,
+									 filename, 
+									 searchType,
+									 intensify,
+									 oscillation);
+		
+		Solution<Integer> bestSol = tabu.solve(maxTime);
+		System.out.println("maxVal = " + bestSol);
+
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;
+		System.out.println("Time = "+(double)totalTime/(double)1000+" seg");		
+	}
+	
+	public static void testAll(int tenure, int maxIt,
+							   SearchStrategy searchType, 
+							   Intensificator intensify,
+							   boolean oscillation,
+							   double maxTime) 
+					   throws IOException {
+		
+		String inst[] = {"020", "040", "060", "080", "100", "200", "400"};
+		
+		for(String file : inst) {
+			TS_QBFPT.run(tenure, maxIt, "instances/qbf" + file, 
+						 searchType, intensify, oscillation,
+						 maxTime);
+		}
+	}
+	
+	/**
      * A main method used for testing the Tabu Search metaheuristic.
      */
-    public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException {
+		
+		// Fixed parameters
+		double maxTime = 1800.0;
+		int maxIterations = 10000;
+		Intensificator intensificator = new Intensificator(1000, 100);
+		
+		// Changeable parameters.
+		int tenure1 = 20, tenure2 = 30;
+		
+		// Testing
+		TS_QBFPT.run(tenure1, maxIterations, "instances/qbf200", 
+				     SearchStrategy.BI, intensificator, true, maxTime);
+		
+		/*
+		// 1 - Testing tenure1/best-improving/no div/no intens.
+		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
+						 null, false, maxTime);
 
-        long startTime = System.currentTimeMillis();
-        Intensificator intensificator = new Intensificator(1000, 100);
-        TS_QBF ts = new TS_QBFPT(
-            20, 10000, "instances/qbf200", SearchStrategy.BI, intensificator, true
-        );
-        Solution<Integer> bestSol = ts.solve(1800.0);
-        System.out.println("maxVal = " + bestSol);
-        long endTime   = System.currentTimeMillis();
-        long totalTime = endTime - startTime;
-        System.out.println("Time = "+(double)totalTime/(double)1000+" seg");
+		// 2 - Testing tenure1/best-improving/no div/intens.
+		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
+						 intensificator, false, maxTime);
 
-    }
-
+		// 3 - Testing tenure2/best-improving/no div/intens.
+		TS_QBFPT.testAll(tenure2, maxIterations, SearchStrategy.BI, 
+						 intensificator, false, maxTime);
+		
+		// 4 - Testing tenure1/best-improving/div/intens.
+		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
+						 intensificator, true, maxTime);
+		
+		// 5 - Testing tenure1/first-improving/no div/intens.
+		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.FI, 
+						 intensificator, false, maxTime);
+		
+		*/
+	}
 }
