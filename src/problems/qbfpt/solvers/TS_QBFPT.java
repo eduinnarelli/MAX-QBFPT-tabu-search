@@ -376,17 +376,21 @@ public class TS_QBFPT extends TS_QBF {
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
 						 intensificator, false, maxTime, "results/CONFIG02.csv");
 
-		// 3 - Testing tenure2/best-improving/no div/intens.
-		TS_QBFPT.testAll(tenure2, maxIterations, SearchStrategy.BI, 
-						 intensificator, false, maxTime, "results/CONFIG03.csv");
+		// 3 - Testing tenure1/best-improving/div/no intens.
+		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
+						 null, true, maxTime, "results/CONFIG03.csv");
 		
 		// 4 - Testing tenure1/best-improving/div/intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
 						 intensificator, true, maxTime, "results/CONFIG04.csv");
 		
-		// 5 - Testing tenure1/first-improving/no div/intens.
+		// 5 - Testing tenure1/first-improving/div/intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.FI, 
-						 intensificator, false, maxTime, "results/CONFIG05.csv");
+						 intensificator, true, maxTime, "results/CONFIG05.csv");
+		
+		// 6 - Testing tenure2/best-improving/div/intens.
+		TS_QBFPT.testAll(tenure2, maxIterations, SearchStrategy.BI, 
+						 intensificator, true, maxTime, "results/CONFIG06.csv");
 		
 		*/
 	}
