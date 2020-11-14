@@ -368,13 +368,18 @@ public class TS_QBFPT extends TS_QBF {
 					   throws IOException {
 		
 		String inst[] = {"020", "040", "060", "080", "100", "200", "400"};
+		Intensificator intensify2 = intensify;
 		
 		for(String file : inst) {
-			if(file == "200" && intensify != null)
-				intensify = new Intensificator(2000, 100);
+			if(file == "200" && intensify != null) {
+				intensify2 = new Intensificator(2000, 100);
+			}
+			else {
+				intensify2 = intensify;
+			}
 			
 			TS_QBFPT.run(tenure, maxIt, "instances/qbf" + file, 
-						 searchType, intensify, oscillation,
+						 searchType, intensify2, oscillation,
 						 maxTime, _resultsFileName);
 		}
 	}
@@ -393,14 +398,14 @@ public class TS_QBFPT extends TS_QBF {
 		int tenure1 = 20, tenure2 = 30;
 		
 		// Testing
-		TS_QBFPT.run(tenure1, maxIterations, "instances/qbf200", 
-				     SearchStrategy.FI, intensificator, true, maxTime, null);
+		//TS_QBFPT.run(tenure1, maxIterations, "instances/qbf200", 
+		//		     SearchStrategy.FI, intensificator, true, maxTime, null);
 		
-		/*
+		
 		// 1 - Testing tenure1/best-improving/no div/no intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
 						 null, false, maxTime, "results/CONFIG01.csv");
-
+/*
 		// 2 - Testing tenure1/best-improving/no div/intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
 						 intensificator, false, maxTime, "results/CONFIG02.csv");
