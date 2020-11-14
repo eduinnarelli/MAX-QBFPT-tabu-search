@@ -29,7 +29,7 @@ public abstract class AbstractTS<E> {
 	/**
 	 * a random number generator.
 	 */
-	static Random rng = new Random(0);
+	private Random rng;
 
 	/**
 	 * the objective function being optimized.
@@ -205,6 +205,7 @@ public abstract class AbstractTS<E> {
 		this.tenure = tenure;
 		this.iterations = iterations;
 		this.intensificator = intensificator;
+		this.rng = new Random(0);
 	}
 
 	/**
