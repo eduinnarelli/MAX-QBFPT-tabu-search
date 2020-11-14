@@ -1,5 +1,8 @@
 package metaheuristics.tabusearch;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,6 +105,11 @@ public abstract class AbstractTS<E> {
 	 * intensification parameters.
 	 */
 	protected Intensificator intensificator;
+	
+	/**
+	 * path to store the history file.
+	 */
+	protected String resultsFileName;
 
 	/**
 	 * Creates the Candidate List, which is an ArrayList of candidate elements
@@ -310,7 +318,7 @@ public abstract class AbstractTS<E> {
 				consecFailures = 0; // Reset failures
 				incumbentSol = new Solution<E>(currentSol);
 				if (verbose)
-					System.out.println("(Iter. " + iterationsCount + ") BestSol = " + incumbentSol);
+					printSolutionMeasure((System.currentTimeMillis() - startTime)/(double)1000);
 			}
 			
 			// Register consecutive failure otherwise
@@ -378,6 +386,52 @@ public abstract class AbstractTS<E> {
 	 */
 	public boolean isSolutionFeasible(Solution<E> sol) {
 		return true;
+	}
+	
+	/**
+	 * Prints the measures of the new incumbent solution
+	 * @param totalTime Time ellapsed
+	 */
+	private void printSolutionMeasure(double totalTime) {
+		if (verbose)
+			System.out.println("(Iter. " + iterationsCount + ", Time " + totalTime + ") BestSol = " + incumbentSol);
+
+		if(resultsFileName != null){
+			try {
+				printSolutionMeasuresToFile(totalTime);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+	}
+
+	/**
+	 * Saves the measures of the new incumbent solution to file
+	 * @param totalTime Time ellapsed
+	 * @throws IOException
+	 */
+	private void printSolutionMeasuresToFile(double totalTime) throws IOException {
+		FileWriter file;
+		File fp = new File(resultsFileName);
+		if(!fp.exists()){
+			file = new FileWriter(resultsFileName);
+			String header = "instance;solutionCost;iterations;time;solutionSize\n";
+			file.write(header);
+		}
+		else {
+			file = new FileWriter(resultsFileName, true);
+		}
+
+		String result = String.format("%s;%s;%s;%s;%s\n",
+				ObjFunction.getDomainSize(),
+				-1.00*incumbentSol.cost,
+				iterationsCount,
+				totalTime,
+				incumbentSol.size()
+		);
+		file.write(result);
+		file.close();
 	}
 
 }

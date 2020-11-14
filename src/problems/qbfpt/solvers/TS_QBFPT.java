@@ -6,12 +6,12 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import metaheuristics.grasp.AbstractGRASP;
+//import metaheuristics.grasp.AbstractGRASP;
 import metaheuristics.tabusearch.Intensificator;
 import problems.qbf.solvers.TS_QBF;
 import problems.qbfpt.QBFPT;
-import problems.qbfpt.solvers.GRASP_QBFPT.BiasFunction;
-import problems.qbfpt.solvers.GRASP_QBFPT.SearchStrategy;
+//import problems.qbfpt.solvers.GRASP_QBFPT.BiasFunction;
+//import problems.qbfpt.solvers.GRASP_QBFPT.SearchStrategy;
 import solutions.Solution;
 
 /**
@@ -76,7 +76,8 @@ public class TS_QBFPT extends TS_QBF {
         String filename,
         SearchStrategy type,
         Intensificator intensificator,
-        boolean oscillation
+        boolean oscillation,
+        String _resultsFileName
     ) throws IOException {
 
         super(tenure, iterations, filename, intensificator);
@@ -87,6 +88,7 @@ public class TS_QBFPT extends TS_QBF {
         ObjFunction = qbfpt;
         searchType = type;
         this.oscillation = oscillation;
+        resultsFileName = _resultsFileName;
 
     }
 
@@ -310,7 +312,8 @@ public class TS_QBFPT extends TS_QBF {
 						   SearchStrategy searchType,
 						   Intensificator intensify,
 						   boolean oscillation,
-						   double maxTime) 
+						   double maxTime,
+						   String _resultsFileName) 
 					   throws IOException {
 		
 		long startTime = System.currentTimeMillis();
@@ -319,7 +322,8 @@ public class TS_QBFPT extends TS_QBF {
 									 filename, 
 									 searchType,
 									 intensify,
-									 oscillation);
+									 oscillation,
+									 _resultsFileName);
 		
 		Solution<Integer> bestSol = tabu.solve(maxTime);
 		System.out.println("maxVal = " + bestSol);
@@ -333,7 +337,8 @@ public class TS_QBFPT extends TS_QBF {
 							   SearchStrategy searchType, 
 							   Intensificator intensify,
 							   boolean oscillation,
-							   double maxTime) 
+							   double maxTime,
+							   String _resultsFileName) 
 					   throws IOException {
 		
 		String inst[] = {"020", "040", "060", "080", "100", "200", "400"};
@@ -341,7 +346,7 @@ public class TS_QBFPT extends TS_QBF {
 		for(String file : inst) {
 			TS_QBFPT.run(tenure, maxIt, "instances/qbf" + file, 
 						 searchType, intensify, oscillation,
-						 maxTime);
+						 maxTime, _resultsFileName);
 		}
 	}
 	
@@ -360,28 +365,28 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Testing
 		TS_QBFPT.run(tenure1, maxIterations, "instances/qbf200", 
-				     SearchStrategy.BI, intensificator, true, maxTime);
+				     SearchStrategy.BI, intensificator, true, maxTime, null);
 		
 		/*
 		// 1 - Testing tenure1/best-improving/no div/no intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
-						 null, false, maxTime);
+						 null, false, maxTime, "results/CONFIG01.csv");
 
 		// 2 - Testing tenure1/best-improving/no div/intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
-						 intensificator, false, maxTime);
+						 intensificator, false, maxTime, "results/CONFIG02.csv");
 
 		// 3 - Testing tenure2/best-improving/no div/intens.
 		TS_QBFPT.testAll(tenure2, maxIterations, SearchStrategy.BI, 
-						 intensificator, false, maxTime);
+						 intensificator, false, maxTime, "results/CONFIG03.csv");
 		
 		// 4 - Testing tenure1/best-improving/div/intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.BI, 
-						 intensificator, true, maxTime);
+						 intensificator, true, maxTime, "results/CONFIG04.csv");
 		
 		// 5 - Testing tenure1/first-improving/no div/intens.
 		TS_QBFPT.testAll(tenure1, maxIterations, SearchStrategy.FI, 
-						 intensificator, false, maxTime);
+						 intensificator, false, maxTime, "results/CONFIG05.csv");
 		
 		*/
 	}
