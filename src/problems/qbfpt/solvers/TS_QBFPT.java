@@ -6,12 +6,9 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-//import metaheuristics.grasp.AbstractGRASP;
 import metaheuristics.tabusearch.Intensificator;
 import problems.qbf.solvers.TS_QBF;
 import problems.qbfpt.QBFPT;
-//import problems.qbfpt.solvers.GRASP_QBFPT.BiasFunction;
-//import problems.qbfpt.solvers.GRASP_QBFPT.SearchStrategy;
 import solutions.Solution;
 
 /**
@@ -185,24 +182,34 @@ public class TS_QBFPT extends TS_QBF {
 	 * First improving neighborhood move.
 	 */
 	private Solution<Integer> firstImprovingNM(){
-		Double minDeltaCost;
-		Integer bestCandIn = null, bestCandOut = null;
-		boolean done = false;
-
-		minDeltaCost = Double.POSITIVE_INFINITY;
+		
+		// Cost Variables
+		Double minDeltaCost, minCost;
+		Double inCost, outCost, exCost;
+		
+		// Cand variables.
+		Integer firstCandIn = null, firstCandOut = null;
+		Integer firstCandExIn = null, firstCandExOut = null;
+		
+		// Auxiliary variables.
+		Double deltaCost;
+		Boolean ignoreCand;
+		Boolean done = false;
+		
+		// Initializing.
+		minDeltaCost = 0.0;
+		inCost = outCost = exCost = Double.POSITIVE_INFINITY;
 		updateCL();
 		
 		// Evaluate insertions
 		for (Integer candIn : CL) {
-
-            Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, currentSol);
-            Boolean ignoreCand = TL.contains(candIn) || fixed.contains(candIn);
+            deltaCost = ObjFunction.evaluateInsertionCost(candIn, currentSol);
+            ignoreCand = TL.contains(candIn) || fixed.contains(candIn);
 
 			if (!ignoreCand || currentSol.cost+deltaCost < incumbentSol.cost) {
 				if (deltaCost < minDeltaCost) {
-					minDeltaCost = deltaCost;
-					bestCandIn = candIn;
-					bestCandOut = null;
+					inCost = deltaCost;
+					firstCandIn = candIn;
 					break;
 				}
 			}
@@ -210,15 +217,13 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Evaluate removals
 		for (Integer candOut : currentSol) {
-
-            Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, currentSol);
-            Boolean ignoreCand = TL.contains(candOut) || fixed.contains(candOut);
+            deltaCost = ObjFunction.evaluateRemovalCost(candOut, currentSol);
+            ignoreCand = TL.contains(candOut) || fixed.contains(candOut);
 
 			if (!ignoreCand || currentSol.cost+deltaCost < incumbentSol.cost) {
 				if (deltaCost < minDeltaCost) {
-					minDeltaCost = deltaCost;
-					bestCandIn = null;
-					bestCandOut = candOut;
+					outCost = deltaCost;
+					firstCandOut = candOut;
 					break;
 				}
 			}
@@ -227,19 +232,21 @@ public class TS_QBFPT extends TS_QBF {
 		// Evaluate exchanges
 		for (Integer candIn : CL) {
 			for (Integer candOut : currentSol) {
-
-                Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, currentSol);
-                Boolean ignoreCands =
+                deltaCost = ObjFunction.evaluateExchangeCost(candIn, 
+                											 candOut,
+                											 currentSol);
+                ignoreCand =
 					TL.contains(candIn) ||
 					TL.contains(candOut) ||
 					fixed.contains(candIn) ||
 					fixed.contains(candOut);
 
-				if (!ignoreCands || currentSol.cost+deltaCost < incumbentSol.cost) {
+				if (!ignoreCand || 
+						currentSol.cost+deltaCost < incumbentSol.cost) {
 					if (deltaCost < minDeltaCost) {
-						minDeltaCost = deltaCost;
-						bestCandIn = candIn;
-						bestCandOut = candOut;
+						exCost = deltaCost;
+						firstCandExIn = candIn;
+						firstCandExOut = candOut;
 						done = true;
 						break;
 					}
@@ -252,23 +259,42 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Implement the best of the first non-tabu moves.
 		TL.poll();
-		if (bestCandOut != null) {
-			currentSol.remove(bestCandOut);
-			CL.add(bestCandOut);
-			TL.add(bestCandOut);
+		minCost = Math.min(Math.min(inCost, outCost), exCost);
+		
+		// In case of tie, insertion is prioritized.
+		if(minCost == inCost && firstCandIn != null) {
+			firstCandOut = null;
+		}
+		
+		// Removal.
+		else if (minCost == outCost && firstCandOut != null) {
+			firstCandIn = null;
+		}
+		
+		// Exchange
+		else if (firstCandExIn != null) {
+			firstCandIn = firstCandExIn;
+			firstCandOut = firstCandExOut;
+		}
+		
+		// Make the move.
+		if (firstCandOut != null) {
+			currentSol.remove(firstCandOut);
+			CL.add(firstCandOut);
+			TL.add(firstCandOut);
 		} else {
 			TL.add(fake);
 		}
 		TL.poll();
-		if (bestCandIn != null) {
-			currentSol.add(bestCandIn);
-			CL.remove(bestCandIn);
-			TL.add(bestCandIn);
+		if (firstCandIn != null) {
+			currentSol.add(firstCandIn);
+			CL.remove(firstCandIn);
+			TL.add(firstCandIn);
 		} else {
 			TL.add(fake);
 		}
-		ObjFunction.evaluate(currentSol);
 		
+		ObjFunction.evaluate(currentSol);
 		return null;
 	}
 
@@ -368,7 +394,7 @@ public class TS_QBFPT extends TS_QBF {
 		
 		// Testing
 		TS_QBFPT.run(tenure1, maxIterations, "instances/qbf200", 
-				     SearchStrategy.BI, intensificator, true, maxTime, null);
+				     SearchStrategy.FI, intensificator, true, maxTime, null);
 		
 		/*
 		// 1 - Testing tenure1/best-improving/no div/no intens.
