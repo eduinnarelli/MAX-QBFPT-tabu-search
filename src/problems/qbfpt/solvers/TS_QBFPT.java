@@ -344,6 +344,9 @@ public class TS_QBFPT extends TS_QBF {
 		String inst[] = {"020", "040", "060", "080", "100", "200", "400"};
 		
 		for(String file : inst) {
+			if(file == "200" && intensify != null)
+				intensify = new Intensificator(2000, 100);
+			
 			TS_QBFPT.run(tenure, maxIt, "instances/qbf" + file, 
 						 searchType, intensify, oscillation,
 						 maxTime, _resultsFileName);
